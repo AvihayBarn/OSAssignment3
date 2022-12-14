@@ -921,7 +921,7 @@ int main(int argc, char *argv[])
     create100MBfile();
     // sendUDS_datagram();
      sendUDP();
-    // myPipe();
+     myPipe();
     //myMmap();
 
     return 0;
