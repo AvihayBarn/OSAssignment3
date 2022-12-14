@@ -920,7 +920,7 @@ int main(int argc, char *argv[])
 {
     create100MBfile();
     // sendUDS_datagram();
-    // sendUDP();
+     sendUDP();
     // myPipe();
     //myMmap();
 
