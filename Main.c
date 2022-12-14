@@ -807,7 +807,7 @@ int myMmap()
         filesize = st.st_size;
 
         // Map the file to memory
-        *addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (addr == MAP_FAILED)
         {
             perror("mmap");
