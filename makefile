@@ -2,15 +2,9 @@ CC = gcc
 AR = ar
 FLAGS = -Wall -g
 
-all: main
+all: sender&reciver
 
-main: Main.o
-	$(CC) -o main Main.o
-
-main.o: Nain.c
-	$(CC) $(FLAGS) -c Main.c 
-
-
-
+sender&reciver: FileSender&Reciver
+	$(CC) -o FileSender&Reciver FileSender&Reciver.c
 clean:
-	rm -f *.o *.so *.txt *.client *.server main 
+	rm -f *.o *.txt *.client *.server FileSender&Reciver 

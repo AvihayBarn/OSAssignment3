@@ -1,14 +1,21 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/types.h>
-
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <unistd.h>
 #include <stdlib.h>
-
+#include <strings.h>
+#include <sys/wait.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
-
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/mman.h>
 
 // define for UDS
 #define SOCK_PATH "tpf_unix_sock.server"
@@ -17,13 +24,19 @@
 
 #define MAXLINE 1024
 #define PORT 8080
-char *IP = "127.0.0.1";
+
+
+char *CURRENT_IP = "127.0.0.1";
 clock_t start;
 clock_t end;
 const int BUFFER_SIZE = MAXLINE * MAXLINE * 100; // 100 MB
 char *fileName = "f.txt";
 
-int create100MBfile()
+
+int Generate100MegaFile();
+int ChecksumOfFiles(char *file_name2);
+
+int Generate100MegaFile()
 {
     // Create a buffer to hold the data
 
@@ -68,11 +81,14 @@ int create100MBfile()
     return 0;
 }
 
-int checkSum(char *file_name2)
+
+
+int ChecksumOfFiles(char *file_name2)
 {
-    int f2 = open(file_name2, O_CREAT | O_RDWR);
-    int f1 = open(fileName, O_CREAT | O_RDWR);
-    // if we had problem to open the files.
+    int file1 = open(fileName, O_CREAT | O_RDWR);
+    int file2 = open(file_name2, O_CREAT | O_RDWR);
+    
+    
     if (f1 == -1)
     {
         perror("open files");
@@ -90,7 +106,7 @@ int checkSum(char *file_name2)
         sum1 += tmp_sum1;
     }
 
-    // if we had problem to open the files.
+    
     if (f2 == -1)
     {
         perror("open");
@@ -101,6 +117,9 @@ int checkSum(char *file_name2)
 
     int sum2 = 0;
     int tmp_sum2;
+
+
+
     while ((r2 = read(f2, buff2, sizeof(buff2))) > 0)
     {
         tmp_sum2 = 0;
@@ -109,6 +128,9 @@ int checkSum(char *file_name2)
         bzero(buff2, MAXLINE);
         sum2 += tmp_sum2;
     }
+
+
+
     close(f1);
     close(f2);
 
@@ -122,7 +144,7 @@ int checkSum(char *file_name2)
     }
 }
 
-/* TCP */
+
 int senderTCP()
 {
 
@@ -131,7 +153,7 @@ int senderTCP()
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
-    addr.sin_addr.s_addr = inet_addr(IP);
+    addr.sin_addr.s_addr = inet_addr(CURRENT_IP);
 
     // Connect to the remote host.
     int con = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
@@ -220,7 +242,7 @@ int reciverTCP()
     fclose(file);
 
     end = clock();
-    int c = checkSum("rec_file.txt");
+    int c = ChecksumOfFiles("rec_file.txt");
     if (c == 1)
     {
         printf("TCP/IPv4 Socket - end: %ld\n", end);
@@ -305,7 +327,7 @@ int reciverUDP()
 
     fclose(file);
     end = clock();
-    int c = checkSum("rec_file_udp.txt");
+    int c = ChecksumOfFiles("rec_file_udp.txt");
     if (c == 1)
     {
         printf("UDP/IPv6 Socket - end: %ld\n", end);
@@ -494,7 +516,7 @@ int reciverUDS_stream()
     fclose(file);
 
     end = clock();
-    int c = checkSum("rec_file_uds.txt");
+    int c = ChecksumOfFiles("rec_file_uds.txt");
     if (c == 1)
     {
         printf("UDS - Stream socket - end: %ld\n", end);
@@ -676,7 +698,7 @@ int reciverUDS_datagram()
     }
     fclose(file);
     end = clock();
-    int c = checkSum("rec_file_uds_dg.txt");
+    int c = ChecksumOfFiles("rec_file_uds_dg.txt");
     if (c == 1)
     {
         printf("UDS - Dgram socket - end: %ld\n", end);
@@ -776,66 +798,7 @@ int sendUDS_datagram()
     }
 }
 
-/*int myMmap()
-{
-    pid_t pid;
-    size_t *filesize;
-    void *addr;
-    if ((pid = fork()) == -1)
-    {
-        perror("fork");
-        exit(1);
-    }
-    if (pid == 0)
-    {
-        int fd = open(fileName, O_RDWR);
-        if (fd == -1)
-        {
-            perror("open");
-            exit(1);
-        }
-        // Get the size of the file
-        struct stat st;
-        fstat(fd, &st);
-        filesize = st.st_size;
 
-        // Map the file to memory
-        addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        if (addr == MAP_FAILED)
-        {
-            perror("mmap");
-            exit(1);
-        }
-    }
-    else
-    {
-        FILE *file = fopen("rec_file_mmap.txt", "wb");
-        if (file == NULL)
-        {
-            perror("reciver file");
-            return -1;
-        }
-        for (size_t i = 0; i < filesize; i++)
-        {
-            fwrite(&(*((char *)addr)), 1, sizeof(char), file);
-            addr++;
-        }
-
-        fclose(file);
-        end = clock();
-        int c = checkSum("rec_file_mmap.txt");
-        if (c == 1)
-        {
-            printf("MMAP - end: %ld\n", end);
-        }
-        else if (c == -1)
-        {
-            printf("MMAP - end: %ld\n", end);
-        }
-    }
-
-    return 0;
-}*/
 
 int myPipe()
 {
@@ -895,7 +858,7 @@ int myPipe()
         fclose(file);
 
         end = clock();
-        int c = checkSum("rec_file.txt");
+        int c = ChecksumOfFiles("rec_file.txt");
         if (c == 1)
         {
             printf("PIPE - end: %ld\n", end);
@@ -911,11 +874,14 @@ int myPipe()
 
 int main(int argc, char *argv[])
 {
-    create100MBfile();
+    //First step to generate a file with 100 megabyte size.
+    Generate100MegaFile();
+
+    
      sendUDS_datagram();
      sendUDP();
      //myPipe();
-    //myMmap();
+    
 
     return 0;
 }
