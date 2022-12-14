@@ -30,7 +30,7 @@ char *CURRENT_IP = "127.0.0.1";
 clock_t start;
 clock_t end;
 const int BUFFER_SIZE = MAXLINE * MAXLINE * 100; // 100 MB
-char *fileName = "f.txt";
+char *fileName = "example.txt";
 
 
 int Generate100MegaFile();
@@ -89,7 +89,7 @@ int ChecksumOfFiles(char *file_name2)
     int file2 = open(file_name2, O_CREAT | O_RDWR);
     
     
-    if (f1 == -1)
+    if (file1 == -1)
     {
         perror("open files");
     }
@@ -97,7 +97,7 @@ int ChecksumOfFiles(char *file_name2)
     long long tmp_sum1;
     char buff[MAXLINE];
     int sum1 = 0;
-    while ((r = read(f1, buff, sizeof(buff))) > 0)
+    while ((r = read(file1, buff, sizeof(buff))) > 0)
     {
         tmp_sum1 = 0;
         for (int i = 0; i < r; i++)
@@ -107,7 +107,7 @@ int ChecksumOfFiles(char *file_name2)
     }
 
     
-    if (f2 == -1)
+    if (file2 == -1)
     {
         perror("open");
     }
@@ -131,8 +131,8 @@ int ChecksumOfFiles(char *file_name2)
 
 
 
-    close(f1);
-    close(f2);
+    close(file1);
+    close(file2);
 
     if (sum2 == sum1)
     {
