@@ -922,7 +922,7 @@ int main(int argc, char *argv[])
     // sendUDS_datagram();
     // sendUDP();
     // myPipe();
-    myMmap();
+    //myMmap();
 
     return 0;
 }
