@@ -2,7 +2,7 @@ CC = gcc
 AR = ar
 FLAGS = -Wall -g
 
-all: senderAndreciver
+all: FileSenderAndReciver.o senderAndreciver
 
 senderAndreciver: FileSenderAndReciver.o
 	$(CC) -pthread -o FileSenderAndReciver FileSenderAndReciver.o
