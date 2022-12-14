@@ -4,7 +4,9 @@ FLAGS = -Wall -g
 
 all: senderAndreciver
 
-senderAndreciver: FileSenderAndReciver
-	$(CC) -pthread -o FileSenderAndReciver.c FileSenderAndReciver
+senderAndreciver: FileSenderAndReciver.o
+	$(CC) -pthread -o FileSenderAndReciver FileSenderAndReciver.o
+fileSenderAndReciver.o: FileSenderAndReciver.c
+	$(CC) $(FLAGS) -C FileSenderAndReciver.c
 clean:
 	rm -f *.o *.txt *.client *.server FileSenderAndReciver 
