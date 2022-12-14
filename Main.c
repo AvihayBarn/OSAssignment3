@@ -783,7 +783,7 @@ int sendUDS_datagram()
     }
 }
 
-int myMmap()
+/*int myMmap()
 {
     pid_t pid;
     size_t *filesize;
@@ -842,7 +842,7 @@ int myMmap()
     }
 
     return 0;
-}
+}*/
 
 int myPipe()
 {
@@ -919,7 +919,7 @@ int myPipe()
 int main(int argc, char *argv[])
 {
     create100MBfile();
-    // sendUDS_datagram();
+     sendUDS_datagram();
      sendUDP();
      myPipe();
     //myMmap();
