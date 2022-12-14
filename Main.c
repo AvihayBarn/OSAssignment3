@@ -786,7 +786,7 @@ int sendUDS_datagram()
 int myMmap()
 {
     pid_t pid;
-    size_t *filesize
+    size_t *filesize;
     void *addr;
     if ((pid = fork()) == -1)
     {
