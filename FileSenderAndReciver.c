@@ -219,7 +219,7 @@ int reciverTCP()
     // receive data on the socket
     char buf[MAXLINE];
     size_t num_bytes_received;
-    size_t num_bytes_written;
+    
     while ((num_bytes_received = recv(client_fd, buf, sizeof(buf), 0)) > 0)
     {
         num_bytes_written = fwrite(buf, sizeof(char), num_bytes_received, file);
@@ -306,7 +306,7 @@ int reciverUDP()
 
     int len = sizeof(cliaddr); // len is value/result
     size_t num_bytes_received;
-    size_t num_bytes_written;
+    
     while ((num_bytes_received = recvfrom(sockfd, (char *)buffer, MAXLINE,
                                           MSG_WAITALL, (struct sockaddr *)&cliaddr,
                                           &len)) > 0)
@@ -511,7 +511,7 @@ int reciverUDS_stream()
     }
     // receive data on the socket
     size_t num_bytes_received;
-    size_t num_bytes_written;
+    
     while ((num_bytes_received = recv(client_sock, buf, sizeof(buf), 0)) > 0)
     {
         num_bytes_written = fwrite(buf, sizeof(char), num_bytes_received, file);
@@ -911,7 +911,7 @@ int myPipe()
         char readbuffer[MAXLINE];
         size_t num_bytes_received;
         /* Read in a string from the pipe */
-        while (num_bytes_received = read(filedes[0], readbuffer, sizeof(readbuffer)))
+        while ((num_bytes_received = read(filedes[0], readbuffer, sizeof(readbuffer))))
         {
 
             fwrite(readbuffer, sizeof(char), num_bytes_received, file);
