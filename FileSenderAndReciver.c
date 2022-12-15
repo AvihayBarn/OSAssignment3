@@ -692,7 +692,7 @@ int UDS_stream()
     }
     if (pid == 0)
     {
-        senderUDS_stream();
+        UDS_stream_send();
         exit(0);
     }
     else
