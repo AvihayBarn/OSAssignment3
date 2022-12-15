@@ -721,9 +721,9 @@ int UDS_datagram_recive()
 
 
     server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, input_filename);
+    strcpy(server_sockaddr.sun_path, SOCK_PATH);
     len = sizeof(server_sockaddr);
-    unlink(input_filename);
+    unlink(SOCK_PATH);
     rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
     if (rc == -1)
     {
