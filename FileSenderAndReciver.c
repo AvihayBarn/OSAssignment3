@@ -516,7 +516,7 @@ int UDP()
 
 int UDS_stream_recive()
 {
-    int server_sock, client_sock, len, rc;
+    int server_sock, client_sock, len, recvie_code;
     int bytes_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
@@ -536,20 +536,20 @@ int UDS_stream_recive()
 
     
     server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, input_filename);
+    strcpy(server_sockaddr.sun_path, SOCK_PATH);
     len = sizeof(server_sockaddr);
 
-    unlink(input_filename);
-    rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
-    if (rc == -1)
+    unlink(SOCK_PATH);
+    recvie_code = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
+    if (recvie_code == -1)
     {
         printf("BIND ERROR");
         close(server_sock);
         exit(1);
     }
 
-    rc = listen(server_sock, backlog);
-    if (rc == -1)
+    recvie_code = listen(server_sock, backlog);
+    if (recvie_code == -1)
     {
         printf("LISTEN ERROR");
         close(server_sock);
@@ -567,7 +567,7 @@ int UDS_stream_recive()
 
 
     len = sizeof(client_sockaddr);
-    rc = getpeername(client_sock, (struct sockaddr *)&client_sockaddr, &len);
+    recvie_code = getpeername(client_sock, (struct sockaddr *)&client_sockaddr, &len);
     if (rc == -1)
     {
         printf("GETPEERNAME ERROR");
