@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
          }
          else if(strcmp("UDS_stream", method) == 0)
          {
-             sendUDS_stream();
+             UDS_stream();
          }
          else if(strcmp("MMap", method) == 0)
          {
