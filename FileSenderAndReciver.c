@@ -66,9 +66,11 @@ int UDS_datagram();
 
 void* SharedMemoryFirstThread(void* arg);
 void* SharedMemorySecondThread();
-void threads_shared_mem();
+void SharedMemory();
 
-int checkSum(char* input_filename);
+int Checksum_Cauculation(char* input_filename);
+int checksum_compare(int checksum1,int checksum2);
+
 int MMAP();
 int PIPE();
 
@@ -151,7 +153,7 @@ int main(int argc, char* argv[])
          }
          else if(strcmp("Shared Memory", method) == 0)
          {
-             threads_shared_mem();
+             SharedMemory();
          }
          
     }
@@ -179,52 +181,59 @@ int main(int argc, char* argv[])
 
 
 
-
-
-int checkSum(char *input_filename)
+int Checksum_of_file(int file)
 {
-    int file2 = open(input_filename, O_CREAT | O_RDWR);
-    int file1 = open(fileName, O_CREAT | O_RDWR);
+    long long temp;
+    size_t bytes_num;
+    char buffer[LINESIZE];
+    int file_checksum = 0;
+    while ((bytes_num = read(file, buffer, sizeof(buff))) > 0)
+    {
+        temp = 0;
+        for (int i = 0; i < bytes_num; i++)
+        {
+            temp += buffer[i];
+        }
+            
+        bzero(buffer, LINESIZE);
+        file_checksum += temp;
+    }
+    return file_checksum
+}
+
+
+int Checksum_Cauculation(char *input_filename)
+{
+     
+     
+    int file1 = open(fileName, O_CREAT | O_RDWR) ,file2 = open(input_filename, O_CREAT | O_RDWR);
   
     if (file1 == -1)
     {
-        perror("open files");
+        perror("error with open files");
     }
-    size_t r;
-    long long tmp_sum1;
-    char buff[LINESIZE];
-    int sum1 = 0;
-    while ((r = read(file1, buff, sizeof(buff))) > 0)
-    {
-        tmp_sum1 = 0;
-        for (int i = 0; i < r; i++)
-            tmp_sum1 += buff[i];
-        bzero(buff, LINESIZE);
-        sum1 += tmp_sum1;
-    }
+
+    int file1_checksum = Checksum_of_file(file1);
+
 
     if (file2 == -1)
     {
         perror("open");
     }
 
-    size_t r2;
-    char buffile2[LINESIZE];
-
-    int sum2 = 0;
-    int tmp_sum2;
-    while ((r2 = read(file2, buffile2, sizeof(buffile2))) > 0)
-    {
-        tmp_sum2 = 0;
-        for (int i = 0; i < r2; i++)
-            tmp_sum2 += buffile2[i];
-        bzero(buffile2, LINESIZE);
-        sum2 += tmp_sum2;
-    }
+    int file2_checksum = Checksum_of_file(file2);
     close(file1);
     close(file2);
 
-    if (sum2 == sum1)
+    return checksum_compare(file1_checksum,file2_checksum);
+
+
+}
+
+
+int checksum_compare(int checksum1,int checksum2)
+{
+    if (checksum1 == checksum2)
     {
         return 1;
     }
@@ -234,7 +243,9 @@ int checkSum(char *input_filename)
     }
 }
 
-/
+
+
+
 int TCPsend()
 {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -335,7 +346,7 @@ int TCPrecive()
     fclose(file);
 
     end = clock();
-    int c = checkSum("rec_file_tcp.txt");
+    int c = Checksum_Cauculation("rec_file_tcp.txt");
     if (c == 1)
     {
         printf("TCP/IPv4 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -423,7 +434,7 @@ int UDPrecive()
 
     fclose(file);
     end = clock();
-    int c = checkSum("rec_file_udp.txt");
+    int c = Checksum_Cauculation("rec_file_udp.txt");
     if (c == 1)
     {
         printf("UDP/IPv6 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -604,7 +615,7 @@ int UDS_stream_recive()
     fclose(file);
 
     end = clock();
-    int c = checkSum("rec_file_uds.txt");
+    int c = Checksum_Cauculation("rec_file_uds.txt");
     if (c == 1)
     {
         printf("UDS - Stream socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -660,6 +671,8 @@ int UDS_stream_send()
     }
 
     FILE *fp = fopen(fileName, "rb");
+
+
     if (!fp)
     {
         perror("fopen sender");
@@ -757,7 +770,7 @@ int UDS_datagram_recive()
     }
     fclose(file);
     end = clock();
-    int c = checkSum("rec_file_uds_dg.txt");
+    int c = Checksum_Cauculation("rec_file_uds_dg.txt");
     if (c == 1)
     {
         printf("UDS - Dgram socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -835,7 +848,8 @@ int UDS_datagram()
     {
         return -1;
     }
-    if (pid == 0)
+
+    else if (pid == 0)
     {
         UDS_datagram_send();
         exit(0);
@@ -885,7 +899,7 @@ int MMAP()
 
     fclose(file);
     end = clock();
-    int c = checkSum("rec_file_mmap.txt");
+    int c = Checksum_Cauculation("rec_file_mmap.txt");
     if (c == 1)
     {
         printf("MMAP - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -957,7 +971,7 @@ int PIPE()
         fclose(file);
 
         end = clock();
-        int c = checkSum("rec_file_pipe.txt");
+        int c = Checksum_Cauculation("rec_file_pipe.txt");
         if (c == 1)
         {
             printf("PIPE - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -1029,7 +1043,7 @@ void *SharedMemorySecondThread()
     munmap(addr, file_size);
     close(fd);
     end = clock();
-    int c = checkSum("rec_file_shared.txt");
+    int c = Checksum_Cauculation("rec_file_shared.txt");
     if (c == 1)
     {
         printf("SHARED MEMORY - end: %f\n", (double)end / CLOCKS_PER_SEC);
@@ -1044,9 +1058,11 @@ void *SharedMemorySecondThread()
     return NULL;
 }
 
-void threads_shared_mem()
+void SharedMemory()
 {
     pthread_t thread;
+
+    
     pthread_create(&thread, NULL, SharedMemorySecondThread, fileName);
 
    
