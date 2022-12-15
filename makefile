@@ -2,11 +2,14 @@ CC = gcc
 AR = ar
 FLAGS = -Wall -g
 
-all: FileSenderAndReciver.o senderAndreciver
+all: main
+run: main
+	./main
+main: Main.o
+	$(CC) -pthread -o main Main.o
 
-senderAndreciver: FileSenderAndReciver.o
-	$(CC) -pthread -o FileSenderAndReciver FileSenderAndReciver.o
-FileSenderAndReciver.o: FileSenderAndReciver.c
-	$(CC) $(FLAGS) -c FileSenderAndReciver.c
+main.o: Main.c
+	$(CC) $(FLAGS) -c Main.c 
+
 clean:
-	rm -f *.o *.txt *.client *.server FileSenderAndReciver 
+	rm -f *.o *.so *.client *.server rec_*.txt reciv*.txt file_100MB.txt main 
