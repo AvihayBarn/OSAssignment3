@@ -21,51 +21,52 @@
 
 
 
-
+#define ERROR -1
+#define LINESIZE 1024
+#define PORT 8080
 #define SOCK_PATH "tpf_unix_sock.server"
 #define SERVER_PATH "tpf_unix_sock.server"
 #define CLIENT_PATH "tpf_unix_sock.client"
 
-#define LINESIZE 1024
-#define PORT 8080
-const int BUFFER_SIZE = LINESIZE * LINESIZE * 100; // 100 MB
+//size of 100 megabytes
+const int BUFFER_SIZE = 104857600;
 
-char globalBuf[LINESIZE]; // shared mem
+char globalBuf[LINESIZE];
 pthread_mutex_t mutex;
 int flag = -1;
 
-char *IP = "127.0.0.1";
+char* LOCAL_IP = "127.0.0.1";
 clock_t start;
 clock_t end;
-char *fileName = "file_100MB.txt";
+char* fileName = "file_100MB.txt";
 
 
 
 
 int create100MBfile();
-/// @brief 
 
-/// @return 
 int TCPsend();
 int TCPrecive();
 int TCP();
 
-int senderUDP();
-int reciverUDP();
-int sendUDP();
+int UDPsend();
+int UDPrecive();
+int UDP();
 
-int sendUDS_stream();
-int reciverUDS_stream();
+int UDS_stream_send();
+int UDS_stream_recive();
+int UDS_stream();
+
 
 int senderUDS_datagram();
 int reciverUDS_datagram();
 int sendUDS_datagram();
 
-void *senderSharred_thread1(void *arg);
-void *senderSharred_thread2();
+void* senderSharred_thread1(void* arg);
+void* senderSharred_thread2();
 void threads_shared_mem();
 
-int checkSum(char *file_name2);
+int checkSum(char* file_name2);
 int myMmap();
 int myPipe();
 
@@ -74,16 +75,53 @@ int myPipe();
 
 
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
+
+    const char* methods[] = { "TCP_IPv4","UDP_IPv6","UDS_diagram","UDS_stream","MMap","Pipe","Shared Memory"};
     create100MBfile();
-    TCP();
-    sendUDS_stream();
-    sendUDP();
-    sendUDS_datagram();
-    myMmap();
-    myPipe();
-    threads_shared_mem();
+
+    for (int i = 0; i < 7; i++)
+    {
+        char* method = methods[i];
+         if(strcmp("TCP_IPv4", method) == 0)
+         {
+             TCP();
+         }
+         else if(strcmp("UDP_IPv6", method) == 0)
+         {
+             UDP();
+         }
+         else if(strcmp("UDS_diagram", method) == 0)
+         {
+             sendUDS_datagram();
+         }
+         else if(strcmp("UDS_stream", method) == 0)
+         {
+             sendUDS_stream();
+         }
+         else if(strcmp("MMap", method) == 0)
+         {
+             myMmap();
+         }
+         else if(strcmp("Pipe", method) == 0)
+         {
+             myPipe();
+         }
+         else if(strcmp("Shared Memory", method) == 0)
+         {
+             threads_shared_mem();
+         }
+         
+    }
+    
+    
+    
+   
+    
+    
+    
+    
     return 0;
 }
 
@@ -332,7 +370,7 @@ int TCP()
 }
 
 
-int reciverUDP()
+int UDPrecive()
 {
     int sockfd;
     char buffer[LINESIZE];
@@ -400,7 +438,7 @@ int reciverUDP()
     return 0;
 }
 
-int senderUDP()
+int UDPsend()
 {
     int sockfd;
     char buffer[LINESIZE];
@@ -458,7 +496,7 @@ int senderUDP()
     return 0;
 }
 
-int sendUDP()
+int UDP()
 {
     int pid = fork();
     if (pid < 0)
@@ -467,18 +505,18 @@ int sendUDP()
     }
     if (pid == 0)
     {
-        senderUDP();
+        UDPsend();
         exit(0);
     }
     else
     {
-        reciverUDP();
+        UDPrecive();
         wait(NULL);
     }
 }
 
 
-int reciverUDS_stream()
+int UDS_stream_recive()
 {
     int server_sock, client_sock, len, rc;
     int bytes_rec = 0;
@@ -582,7 +620,7 @@ int reciverUDS_stream()
     return 0;
 }
 
-int senderUDS_stream()
+int UDS_stream_send()
 {
     int client_sock, rc, len;
     struct sockaddr_un server_sockaddr;
@@ -645,7 +683,7 @@ int senderUDS_stream()
     return 0;
 }
 
-int sendUDS_stream()
+int UDS_stream()
 {
     int pid = fork();
     if (pid < 0)
