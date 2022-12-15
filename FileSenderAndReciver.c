@@ -187,7 +187,7 @@ int Checksum_of_file(int file)
     size_t bytes_num;
     char buffer[LINESIZE];
     int file_checksum = 0;
-    while ((bytes_num = read(file, buffer, sizeof(buff))) > 0)
+    while ((bytes_num = read(file, buffer, sizeof(buffer))) > 0)
     {
         temp = 0;
         for (int i = 0; i < bytes_num; i++)
@@ -198,7 +198,7 @@ int Checksum_of_file(int file)
         bzero(buffer, LINESIZE);
         file_checksum += temp;
     }
-    return file_checksum
+    return file_checksum;
 }
 
 
