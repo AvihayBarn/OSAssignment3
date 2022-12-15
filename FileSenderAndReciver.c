@@ -245,7 +245,7 @@ int TCPsend()
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
-    addr.sin_addr.s_addr = inet_addr(IP);
+    addr.sin_addr.s_addr = inet_addr(LOCAL_IP);
 
     // Connect to the remote host.
     int con = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
