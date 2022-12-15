@@ -568,7 +568,7 @@ int UDS_stream_recive()
 
     len = sizeof(client_sockaddr);
     recvie_code = getpeername(client_sock, (struct sockaddr *)&client_sockaddr, &len);
-    if (rc == -1)
+    if (recvie_code == -1)
     {
         printf("GETPEERNAME ERROR");
         close(server_sock);
