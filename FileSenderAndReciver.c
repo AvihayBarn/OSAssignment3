@@ -1,33 +1,36 @@
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <sys/wait.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <errno.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/mman.h>
-#include <pthread.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <unistd.h>
 
-// define for UDS
+
+
+
+
 #define SOCK_PATH "tpf_unix_sock.server"
 #define SERVER_PATH "tpf_unix_sock.server"
 #define CLIENT_PATH "tpf_unix_sock.client"
 
-#define MAXLINE 1024
+#define LINESIZE 1024
 #define PORT 8080
-const int BUFFER_SIZE = MAXLINE * MAXLINE * 100; // 100 MB
+const int BUFFER_SIZE = LINESIZE * LINESIZE * 100; // 100 MB
 
-char globalBuf[MAXLINE]; // shared mem
+char globalBuf[LINESIZE]; // shared mem
 pthread_mutex_t mutex;
 int flag = -1;
 
@@ -35,6 +38,67 @@ char *IP = "127.0.0.1";
 clock_t start;
 clock_t end;
 char *fileName = "file_100MB.txt";
+
+
+
+
+int create100MBfile();
+/// @brief 
+
+/// @return 
+int TCPsend();
+int TCPrecive();
+int TCP();
+
+int senderUDP();
+int reciverUDP();
+int sendUDP();
+
+int sendUDS_stream();
+int reciverUDS_stream();
+
+int senderUDS_datagram();
+int reciverUDS_datagram();
+int sendUDS_datagram();
+
+void *senderSharred_thread1(void *arg);
+void *senderSharred_thread2();
+void threads_shared_mem();
+
+int checkSum(char *file_name2);
+int myMmap();
+int myPipe();
+
+
+
+
+
+
+int main(int argc, char *argv[])
+{
+    create100MBfile();
+    TCP();
+    sendUDS_stream();
+    sendUDP();
+    sendUDS_datagram();
+    myMmap();
+    myPipe();
+    threads_shared_mem();
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 int create100MBfile()
 {
@@ -92,14 +156,14 @@ int checkSum(char *file_name2)
     }
     size_t r;
     long long tmp_sum1;
-    char buff[MAXLINE];
+    char buff[LINESIZE];
     int sum1 = 0;
     while ((r = read(f1, buff, sizeof(buff))) > 0)
     {
         tmp_sum1 = 0;
         for (int i = 0; i < r; i++)
             tmp_sum1 += buff[i];
-        bzero(buff, MAXLINE);
+        bzero(buff, LINESIZE);
         sum1 += tmp_sum1;
     }
 
@@ -110,7 +174,7 @@ int checkSum(char *file_name2)
     }
 
     size_t r2;
-    char buff2[MAXLINE];
+    char buff2[LINESIZE];
 
     int sum2 = 0;
     int tmp_sum2;
@@ -119,7 +183,7 @@ int checkSum(char *file_name2)
         tmp_sum2 = 0;
         for (int i = 0; i < r2; i++)
             tmp_sum2 += buff2[i];
-        bzero(buff2, MAXLINE);
+        bzero(buff2, LINESIZE);
         sum2 += tmp_sum2;
     }
     close(f1);
@@ -136,7 +200,7 @@ int checkSum(char *file_name2)
 }
 
 /* TCP */
-int senderTCP()
+int TCPsend()
 {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     // Set the address and port of the remote host.
@@ -162,14 +226,14 @@ int senderTCP()
     }
 
     // Read the contents of the file and send it over the socket.
-    char buffer[MAXLINE];
+    char buffer[LINESIZE];
     size_t bytes_read;
     start = clock();
     printf("TCP/IPv4 Socket - start: %f\n", (float)start / CLOCKS_PER_SEC);
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0)
     {
         send(sockfd, buffer, bytes_read, 0);
-        bzero(buffer, MAXLINE);
+        bzero(buffer, LINESIZE);
     }
     // Close the file and the socket.
     fclose(fp);
@@ -177,7 +241,7 @@ int senderTCP()
     return 0;
 }
 
-int reciverTCP()
+int TCPrecive()
 {
     // Create a socket.
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -216,14 +280,14 @@ int reciverTCP()
         perror("reciver file");
         return -1;
     }
-    // receive data on the socket
-    char buf[MAXLINE];
+    
+    char buf[LINESIZE];
     size_t num_bytes_received;
     size_t num_bytes_written;
     while ((num_bytes_received = recv(client_fd, buf, sizeof(buf), 0)) > 0)
     {
         num_bytes_written = fwrite(buf, sizeof(char), num_bytes_received, file);
-        bzero(buf, MAXLINE);
+        bzero(buf, LINESIZE);
     }
 
     if (num_bytes_received == -1)
@@ -232,7 +296,7 @@ int reciverTCP()
         return -1;
     }
     close(sock_fd);
-    // close(client_fd);
+    
     fclose(file);
 
     end = clock();
@@ -248,7 +312,7 @@ int reciverTCP()
     return 0;
 }
 
-int sendTCP()
+int TCP()
 {
     int pid = fork();
     if (pid < 0)
@@ -257,24 +321,23 @@ int sendTCP()
     }
     if (pid == 0)
     {
-        senderTCP();
+        TCPsend();
         exit(0);
     }
     else
     {
-        reciverTCP();
+        TCPrecive();
         wait(NULL);
     }
 }
 
-/* UDP */
+
 int reciverUDP()
 {
     int sockfd;
-    char buffer[MAXLINE];
+    char buffer[LINESIZE];
     struct sockaddr_in servaddr, cliaddr;
 
-    // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("socket creation failed");
@@ -283,13 +346,13 @@ int reciverUDP()
 
     memset(&servaddr, 0, sizeof(servaddr));
     memset(&cliaddr, 0, sizeof(cliaddr));
-    memset(buffer, 0, MAXLINE);
-    // Filling server information
-    servaddr.sin_family = AF_INET; // IPv4
+    memset(buffer, 0, LINESIZE);
+    
+    servaddr.sin_family = AF_INET; 
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(12345);
 
-    // Bind the socket with the server address
+    
     if (bind(sockfd, (const struct sockaddr *)&servaddr,
              sizeof(servaddr)) < 0)
     {
@@ -304,10 +367,10 @@ int reciverUDP()
         return -1;
     }
 
-    int len = sizeof(cliaddr); // len is value/result
+    int len = sizeof(cliaddr);
     size_t num_bytes_received;
     size_t num_bytes_written;
-    while ((num_bytes_received = recvfrom(sockfd, (char *)buffer, MAXLINE,
+    while ((num_bytes_received = recvfrom(sockfd, (char *)buffer, LINESIZE,
                                           MSG_WAITALL, (struct sockaddr *)&cliaddr,
                                           &len)) > 0)
     {
@@ -316,10 +379,10 @@ int reciverUDP()
             perror("recive");
             return -1;
         }
-        // printf("rec: %ld", num_bytes_received);
+        
         num_bytes_written = fwrite(buffer, sizeof(char), num_bytes_received, file);
-        // printf("write: %ld\n", num_bytes_written);
-        bzero(buffer, MAXLINE);
+       
+        bzero(buffer, LINESIZE);
     }
 
     fclose(file);
@@ -340,10 +403,10 @@ int reciverUDP()
 int senderUDP()
 {
     int sockfd;
-    char buffer[MAXLINE];
+    char buffer[LINESIZE];
     struct sockaddr_in servaddr;
 
-    // Creating socket file descriptor
+    
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("socket creation failed");
@@ -351,13 +414,13 @@ int senderUDP()
     }
 
     memset(&servaddr, 0, sizeof(servaddr));
-    memset(buffer, 0, MAXLINE);
-    // Filling server information
+    memset(buffer, 0, LINESIZE);
+  
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(12345);
     servaddr.sin_addr.s_addr = INADDR_ANY;
 
-    // Open the file that you want to send.
+    
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
@@ -365,7 +428,7 @@ int senderUDP()
         return -1;
     }
 
-    // Read the contents of the file and send it over the socket.
+  
     size_t bytes_read;
     start = clock();
     printf("UDP/IPv6 Socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
@@ -386,10 +449,10 @@ int senderUDP()
                 exit(1);
             }
         }
-        bzero(buffer, MAXLINE);
+        bzero(buffer, LINESIZE);
     }
     sendto(sockfd, "", 0, 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    // Close the file and the socket.
+    
     fclose(fp);
     close(sockfd);
     return 0;
@@ -414,22 +477,20 @@ int sendUDP()
     }
 }
 
-/* UDS strem */
+
 int reciverUDS_stream()
 {
     int server_sock, client_sock, len, rc;
     int bytes_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buf[MAXLINE];
+    char buf[LINESIZE];
     int backlog = 10;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buf, 0, MAXLINE);
+    memset(buf, 0, LINESIZE);
 
-    /**************************************/
-    /* Create a UNIX domain stream socket */
-    /**************************************/
+  
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_sock == -1)
     {
@@ -437,14 +498,7 @@ int reciverUDS_stream()
         exit(1);
     }
 
-    /***************************************/
-    /* Set up the UNIX sockaddr structure  */
-    /* by using AF_UNIX for the family and */
-    /* giving it a filepath to bind to.    */
-    /*                                     */
-    /* Unlink the file so the bind will    */
-    /* succeed, then bind to that file.    */
-    /***************************************/
+    
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SOCK_PATH);
     len = sizeof(server_sockaddr);
@@ -458,9 +512,6 @@ int reciverUDS_stream()
         exit(1);
     }
 
-    /*********************************/
-    /* Listen for any client sockets */
-    /*********************************/
     rc = listen(server_sock, backlog);
     if (rc == -1)
     {
@@ -468,11 +519,7 @@ int reciverUDS_stream()
         close(server_sock);
         exit(1);
     }
-    // printf("socket listening...\n");
-
-    /*********************************/
-    /* Accept an incoming connection */
-    /*********************************/
+ 
     client_sock = accept(server_sock, (struct sockaddr *)&client_sockaddr, &len);
     if (client_sock == -1)
     {
@@ -482,9 +529,7 @@ int reciverUDS_stream()
         exit(1);
     }
 
-    /****************************************/
-    /* Get the name of the connected socket */
-    /****************************************/
+
     len = sizeof(client_sockaddr);
     rc = getpeername(client_sock, (struct sockaddr *)&client_sockaddr, &len);
     if (rc == -1)
@@ -498,10 +543,7 @@ int reciverUDS_stream()
     {
     }
 
-    /************************************/
-    /* Read and print the data          */
-    /* incoming on the connected socket */
-    /************************************/
+
 
     FILE *file = fopen("rec_file_uds.txt", "wb");
     if (file == NULL)
@@ -509,13 +551,13 @@ int reciverUDS_stream()
         perror("reciver file");
         return -1;
     }
-    // receive data on the socket
+
     size_t num_bytes_received;
     size_t num_bytes_written;
     while ((num_bytes_received = recv(client_sock, buf, sizeof(buf), 0)) > 0)
     {
         num_bytes_written = fwrite(buf, sizeof(char), num_bytes_received, file);
-        bzero(buf, MAXLINE);
+        bzero(buf, LINESIZE);
     }
 
     if (num_bytes_received == -1)
@@ -545,13 +587,11 @@ int senderUDS_stream()
     int client_sock, rc, len;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buf[MAXLINE];
+    char buf[LINESIZE];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buf, 0, MAXLINE);
-    /**************************************/
-    /* Create a UNIX domain stream socket */
-    /**************************************/
+    memset(buf, 0, LINESIZE);
+
     client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (client_sock == -1)
     {
@@ -559,14 +599,7 @@ int senderUDS_stream()
         exit(1);
     }
 
-    /***************************************/
-    /* Set up the UNIX sockaddr structure  */
-    /* by using AF_UNIX for the family and */
-    /* giving it a filepath to bind to.    */
-    /*                                     */
-    /* Unlink the file so the bind will    */
-    /* succeed, then bind to that file.    */
-    /***************************************/
+
     client_sockaddr.sun_family = AF_UNIX;
     strcpy(client_sockaddr.sun_path, CLIENT_PATH);
     len = sizeof(client_sockaddr);
@@ -580,11 +613,6 @@ int senderUDS_stream()
         exit(1);
     }
 
-    /***************************************/
-    /* Set up the UNIX sockaddr structure  */
-    /* for the server socket and connect   */
-    /* to it.                              */
-    /***************************************/
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, len);
@@ -595,7 +623,6 @@ int senderUDS_stream()
         exit(1);
     }
 
-    // Open the file that you want to send.
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
@@ -603,16 +630,15 @@ int senderUDS_stream()
         return -1;
     }
 
-    // Read the contents of the file and send it over the socket.
     size_t bytes_read;
     start = clock();
     printf("UDS - Stream socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
     while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0)
     {
         send(client_sock, buf, bytes_read, 0);
-        bzero(buf, MAXLINE);
+        bzero(buf, LINESIZE);
     }
-    // Close the file and the socket.
+
     fclose(fp);
     close(client_sock);
 
@@ -638,18 +664,15 @@ int sendUDS_stream()
     }
 }
 
-/* UDS datagram */
 int reciverUDS_datagram()
 {
     int server_sock, len, rc;
     struct sockaddr_un server_sockaddr, peer_sock;
-    char buf[MAXLINE];
+    char buf[LINESIZE];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buf, 0, MAXLINE);
+    memset(buf, 0, LINESIZE);
 
-    /****************************************/
-    /* Create a UNIX domain datagram socket */
-    /****************************************/
+
     server_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (server_sock == -1)
     {
@@ -660,14 +683,7 @@ int reciverUDS_datagram()
     {
     }
 
-    /***************************************/
-    /* Set up the UNIX sockaddr structure  */
-    /* by using AF_UNIX for the family and */
-    /* giving it a filepath to bind to.    */
-    /*                                     */
-    /* Unlink the file so the bind will    */
-    /* succeed, then bind to that file.    */
-    /***************************************/
+
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SOCK_PATH);
     len = sizeof(server_sockaddr);
@@ -687,10 +703,6 @@ int reciverUDS_datagram()
         return -1;
     }
 
-    /****************************************/
-    /* Read data on the server from clients */
-    /* and print the data that was read.    */
-    /****************************************/
     size_t bytes_rec = 0;
 
     while ((bytes_rec = recvfrom(server_sock, (char *)buf, sizeof(buf), MSG_WAITALL, (struct sockaddr *)&server_sockaddr, &len)) > 0)
@@ -704,7 +716,7 @@ int reciverUDS_datagram()
         else
         {
             fwrite(buf, sizeof(char), bytes_rec, file);
-            bzero(buf, MAXLINE);
+            bzero(buf, LINESIZE);
         }
     }
     fclose(file);
@@ -728,12 +740,10 @@ int senderUDS_datagram()
 {
     int client_sock, rc;
     struct sockaddr_un remote;
-    char buf[MAXLINE];
+    char buf[LINESIZE];
     memset(&remote, 0, sizeof(struct sockaddr_un));
-    memset(buf, 0, MAXLINE);
-    /****************************************/
-    /* Create a UNIX domain datagram socket */
-    /****************************************/
+    memset(buf, 0, LINESIZE);
+ 
     client_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (client_sock == -1)
     {
@@ -741,20 +751,13 @@ int senderUDS_datagram()
         exit(1);
     }
 
-    /***************************************/
-    /* Set up the UNIX sockaddr structure  */
-    /* by using AF_UNIX for the family and */
-    /* giving it a filepath to send to.    */
-    /***************************************/
+
     remote.sun_family = AF_UNIX;
     strcpy(remote.sun_path, SERVER_PATH);
 
-    /***************************************/
-    /* Copy the data to be sent to the     */
-    /* buffer and send it to the server.   */
-    /***************************************/
 
-    // Open the file that you want to send.
+
+
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
@@ -776,14 +779,12 @@ int senderUDS_datagram()
         }
         else
         {
-            bzero(buf, MAXLINE);
+            bzero(buf, LINESIZE);
         }
     }
     sendto(client_sock, "", 0, 0, (struct sockaddr *)&remote, sizeof(remote));
 
-    /*****************************/
-    /* Close the socket and exit */
-    /*****************************/
+   
     fclose(fp);
     close(client_sock);
 
@@ -879,7 +880,7 @@ int myPipe()
         close(filedes[0]); // Child process does not need this end of the pipe
 
         /* Send "string" through the output side of pipe */
-        char buf[MAXLINE];
+        char buf[LINESIZE];
         FILE *fp = fopen(fileName, "rb");
         if (!fp)
         {
@@ -908,14 +909,14 @@ int myPipe()
             perror("reciver file");
             return -1;
         }
-        char readbuffer[MAXLINE];
+        char readbuffer[LINESIZE];
         size_t num_bytes_received;
         /* Read in a string from the pipe */
         while (num_bytes_received = read(filedes[0], readbuffer, sizeof(readbuffer)))
         {
 
             fwrite(readbuffer, sizeof(char), num_bytes_received, file);
-            bzero(readbuffer, MAXLINE);
+            bzero(readbuffer, LINESIZE);
         }
         close(filedes[0]);
         fclose(file);
@@ -971,7 +972,7 @@ void *senderSharred_thread1(void *arg)
     }
     close(dest_fd);
 
-    // Return success
+
     return NULL;
 }
 
@@ -1005,7 +1006,7 @@ void *senderSharred_thread2()
     }
 
 
-    // Return success
+   
     return NULL;
 }
 
@@ -1014,19 +1015,7 @@ void threads_shared_mem()
     pthread_t thread;
     pthread_create(&thread, NULL, senderSharred_thread2, fileName);
 
-    // Wait for the thread to finish
+   
     pthread_join(thread, NULL);
 }
 
-int main(int argc, char *argv[])
-{
-    create100MBfile();
-    sendTCP();
-    sendUDS_stream();
-    sendUDP();
-    sendUDS_datagram();
-    myMmap();
-    myPipe();
-    threads_shared_mem();
-    return 0;
-}
