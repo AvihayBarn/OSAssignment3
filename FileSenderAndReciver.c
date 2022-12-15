@@ -697,7 +697,7 @@ int UDS_stream()
     }
     else
     {
-        reciverUDS_stream();
+        UDS_stream_recive();
         wait(NULL);
     }
 }
