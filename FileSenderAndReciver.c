@@ -31,9 +31,9 @@
 //size of 100 megabytes
 const int BUFFER_SIZE = 104857600;
 
-char globalBuf[LINESIZE];
+
 pthread_mutex_t mutex;
-int flag = -1;
+
 
 char* LOCAL_IP = "127.0.0.1";
 clock_t start;
@@ -43,7 +43,9 @@ char* fileName = "file_100MB.txt";
 
 
 
-int create100MBfile();
+
+
+//Every method has function to send and recive the data and a wraping function
 
 int TCPsend();
 int TCPrecive();
@@ -58,17 +60,17 @@ int UDS_stream_recive();
 int UDS_stream();
 
 
-int senderUDS_datagram();
-int reciverUDS_datagram();
-int sendUDS_datagram();
+int UDS_datagram_send();
+int UDS_datagram_recive();
+int UDS_datagram();
 
-void* senderSharred_thread1(void* arg);
-void* senderSharred_thread2();
+void* SharedMemoryFirstThread(void* arg);
+void* SharedMemorySecondThread();
 void threads_shared_mem();
 
-int checkSum(char* file_name2);
-int myMmap();
-int myPipe();
+int checkSum(char* input_filename);
+int MMAP();
+int PIPE();
 
 
 
@@ -79,7 +81,46 @@ int main(int argc, char* argv[])
 {
 
     const char* methods[] = { "TCP_IPv4","UDP_IPv6","UDS_diagram","UDS_stream","MMap","Pipe","Shared Memory"};
-    create100MBfile();
+    
+    
+    char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    if (!buffer)
+    {
+        perror("malloc");
+        return 1;
+    }
+
+    
+    for (int i = 0; i < BUFFER_SIZE; i++)
+    {
+        buffer[i] = rand() % 256;
+    }
+
+    
+    FILE *file = fopen(fileName, "wb");
+    if (!file)
+    {
+        perror("fopen");
+        return 1;
+    }
+
+    
+    size_t bytes_written = fwrite(buffer, sizeof(char), BUFFER_SIZE, file);
+    if (bytes_written != BUFFER_SIZE)
+    {
+        fprintf(stderr, "Error writing to file\n");
+        return 1;
+    }
+
+    
+    if (fclose(file) != 0)
+    {
+        perror("fclose");
+        return 1;
+    }
+
+    
+    free(buffer);
 
     for (int i = 0; i < 7; i++)
     {
@@ -94,7 +135,7 @@ int main(int argc, char* argv[])
          }
          else if(strcmp("UDS_diagram", method) == 0)
          {
-             sendUDS_datagram();
+             UDS_datagram();
          }
          else if(strcmp("UDS_stream", method) == 0)
          {
@@ -102,11 +143,11 @@ int main(int argc, char* argv[])
          }
          else if(strcmp("MMap", method) == 0)
          {
-             myMmap();
+             MMAP();
          }
          else if(strcmp("Pipe", method) == 0)
          {
-             myPipe();
+             PIPE();
          }
          else if(strcmp("Shared Memory", method) == 0)
          {
@@ -138,57 +179,14 @@ int main(int argc, char* argv[])
 
 
 
-int create100MBfile()
+
+
+int checkSum(char *input_filename)
 {
-    // Create a buffer to hold the data
-
-    char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
-    if (!buffer)
-    {
-        perror("malloc");
-        return 1;
-    }
-
-    // Fill the buffer with random characters
-    for (int i = 0; i < BUFFER_SIZE; i++)
-    {
-        buffer[i] = rand() % 256;
-    }
-
-    // Open the file
-    FILE *file = fopen(fileName, "wb");
-    if (!file)
-    {
-        perror("fopen");
-        return 1;
-    }
-
-    // Write the data to the file
-    size_t bytes_written = fwrite(buffer, sizeof(char), BUFFER_SIZE, file);
-    if (bytes_written != BUFFER_SIZE)
-    {
-        fprintf(stderr, "Error writing to file\n");
-        return 1;
-    }
-
-    // Close the file
-    if (fclose(file) != 0)
-    {
-        perror("fclose");
-        return 1;
-    }
-
-    // Free the buffer
-    free(buffer);
-    return 0;
-}
-
-int checkSum(char *file_name2)
-{
-    int f2 = open(file_name2, O_CREAT | O_RDWR);
-    int f1 = open(fileName, O_CREAT | O_RDWR);
-    // if we had problem to open the files.
-    if (f1 == -1)
+    int file2 = open(input_filename, O_CREAT | O_RDWR);
+    int file1 = open(fileName, O_CREAT | O_RDWR);
+  
+    if (file1 == -1)
     {
         perror("open files");
     }
@@ -196,7 +194,7 @@ int checkSum(char *file_name2)
     long long tmp_sum1;
     char buff[LINESIZE];
     int sum1 = 0;
-    while ((r = read(f1, buff, sizeof(buff))) > 0)
+    while ((r = read(file1, buff, sizeof(buff))) > 0)
     {
         tmp_sum1 = 0;
         for (int i = 0; i < r; i++)
@@ -205,27 +203,26 @@ int checkSum(char *file_name2)
         sum1 += tmp_sum1;
     }
 
-    // if we had problem to open the files.
-    if (f2 == -1)
+    if (file2 == -1)
     {
         perror("open");
     }
 
     size_t r2;
-    char buff2[LINESIZE];
+    char buffile2[LINESIZE];
 
     int sum2 = 0;
     int tmp_sum2;
-    while ((r2 = read(f2, buff2, sizeof(buff2))) > 0)
+    while ((r2 = read(file2, buffile2, sizeof(buffile2))) > 0)
     {
         tmp_sum2 = 0;
         for (int i = 0; i < r2; i++)
-            tmp_sum2 += buff2[i];
-        bzero(buff2, LINESIZE);
+            tmp_sum2 += buffile2[i];
+        bzero(buffile2, LINESIZE);
         sum2 += tmp_sum2;
     }
-    close(f1);
-    close(f2);
+    close(file1);
+    close(file2);
 
     if (sum2 == sum1)
     {
@@ -237,17 +234,17 @@ int checkSum(char *file_name2)
     }
 }
 
-/* TCP */
+/
 int TCPsend()
 {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    // Set the address and port of the remote host.
+    
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = inet_addr(LOCAL_IP);
 
-    // Connect to the remote host.
+    
     int con = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
     if (con == -1)
     {
@@ -255,7 +252,7 @@ int TCPsend()
         close(sockfd);
         exit(1);
     }
-    // Open the file that you want to send.
+    
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
@@ -263,7 +260,7 @@ int TCPsend()
         return -1;
     }
 
-    // Read the contents of the file and send it over the socket.
+    
     char buffer[LINESIZE];
     size_t bytes_read;
     start = clock();
@@ -273,7 +270,7 @@ int TCPsend()
         send(sockfd, buffer, bytes_read, 0);
         bzero(buffer, LINESIZE);
     }
-    // Close the file and the socket.
+    
     fclose(fp);
     close(sockfd);
     return 0;
@@ -281,10 +278,10 @@ int TCPsend()
 
 int TCPrecive()
 {
-    // Create a socket.
+   
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Bind the socket to a local address and port
+    
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
@@ -295,14 +292,14 @@ int TCPrecive()
         return -1;
     }
 
-    // Put the socket into listening mode
+    
     if (listen(sock_fd, 10) == -1)
     {
         perror("listen");
         return -1;
     }
 
-    // Accept incoming connections
+    
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int client_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_len);
@@ -354,6 +351,7 @@ int TCP()
 {
     int pid = fork();
     if (pid < 0)
+    
     {
         return -1;
     }
@@ -538,10 +536,10 @@ int UDS_stream_recive()
 
     
     server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, SOCK_PATH);
+    strcpy(server_sockaddr.sun_path, input_filename);
     len = sizeof(server_sockaddr);
 
-    unlink(SOCK_PATH);
+    unlink(input_filename);
     rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
     if (rc == -1)
     {
@@ -702,7 +700,7 @@ int UDS_stream()
     }
 }
 
-int reciverUDS_datagram()
+int UDS_datagram_recive()
 {
     int server_sock, len, rc;
     struct sockaddr_un server_sockaddr, peer_sock;
@@ -723,9 +721,9 @@ int reciverUDS_datagram()
 
 
     server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, SOCK_PATH);
+    strcpy(server_sockaddr.sun_path, input_filename);
     len = sizeof(server_sockaddr);
-    unlink(SOCK_PATH);
+    unlink(input_filename);
     rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
     if (rc == -1)
     {
@@ -774,7 +772,7 @@ int reciverUDS_datagram()
     return 0;
 }
 
-int senderUDS_datagram()
+int UDS_datagram_send()
 {
     int client_sock, rc;
     struct sockaddr_un remote;
@@ -829,7 +827,7 @@ int senderUDS_datagram()
     return 0;
 }
 
-int sendUDS_datagram()
+int UDS_datagram()
 {
 
     int pid = fork();
@@ -839,17 +837,17 @@ int sendUDS_datagram()
     }
     if (pid == 0)
     {
-        senderUDS_datagram();
+        UDS_datagram_send();
         exit(0);
     }
     else
     {
-        reciverUDS_datagram();
+        UDS_datagram_recive();
         wait(NULL);
     }
 }
 
-int myMmap()
+int MMAP()
 {
 
     int fd = open(fileName, O_RDWR);
@@ -858,12 +856,12 @@ int myMmap()
         perror("open");
         exit(1);
     }
-    // Get the size of the file
+    
     struct stat st;
     fstat(fd, &st);
     size_t filesize = st.st_size;
 
-    // Map the file to memory
+    
     start = clock();
     printf("MMAP - start: %f\n", (double)start / CLOCKS_PER_SEC);
     void *addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -900,7 +898,7 @@ int myMmap()
     return 0;
 }
 
-int myPipe()
+int PIPE()
 {
     int filedes[2];
     pid_t childpid;
@@ -915,9 +913,8 @@ int myPipe()
 
     if (childpid == 0)
     {
-        close(filedes[0]); // Child process does not need this end of the pipe
+        close(filedes[0]);
 
-        /* Send "string" through the output side of pipe */
         char buf[LINESIZE];
         FILE *fp = fopen(fileName, "rb");
         if (!fp)
@@ -938,8 +935,8 @@ int myPipe()
     }
     else
     {
-        /* Parent process closes up output side of pipe */
-        close(filedes[1]); // Parent process does not need this end of the pipe
+        
+        close(filedes[1]); 
 
         FILE *file = fopen("rec_file_pipe.txt", "wb");
         if (file == NULL)
@@ -949,7 +946,7 @@ int myPipe()
         }
         char readbuffer[LINESIZE];
         size_t num_bytes_received;
-        /* Read in a string from the pipe */
+        
         while (num_bytes_received = read(filedes[0], readbuffer, sizeof(readbuffer)))
         {
 
@@ -974,11 +971,11 @@ int myPipe()
     return 0;
 }
 
-void *senderSharred_thread1(void *arg)
+void *SharedMemoryFirstThread(void *arg)
 {
-    // Get the address of the shared memory object from the argument
+ 
     void *addr = (void *)arg;
-    // const char *filename = "100mb.txt";
+ 
     struct stat file_stat;
     if (stat(fileName, &file_stat) != 0)
     {
@@ -986,8 +983,7 @@ void *senderSharred_thread1(void *arg)
         exit(1);
     }
 
-    // Print the size of the file
-    // Transfer the file from the shared memory object to the specified location
+    
     int dest_fd = open("rec_file_shared.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (dest_fd == -1)
     {
@@ -995,7 +991,7 @@ void *senderSharred_thread1(void *arg)
         exit(1);
     }
 
-    // Write the file from the shared memory object to the destination file
+   
     size_t num_bytes = 0;
     ssize_t bytes_written = 0;
     while (num_bytes < file_stat.st_size && bytes_written != -1)
@@ -1014,7 +1010,7 @@ void *senderSharred_thread1(void *arg)
     return NULL;
 }
 
-void *senderSharred_thread2()
+void *SharedMemorySecondThread()
 {
     start = clock();
     printf("SHARED MEMORY - start: %f\n", (double)start / CLOCKS_PER_SEC);
@@ -1026,7 +1022,7 @@ void *senderSharred_thread2()
     void *addr = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
 
     pthread_t thread;
-    pthread_create(&thread, NULL, senderSharred_thread1, addr);
+    pthread_create(&thread, NULL, SharedMemoryFirstThread, addr);
     
     pthread_join(thread, NULL);
 
@@ -1051,7 +1047,7 @@ void *senderSharred_thread2()
 void threads_shared_mem()
 {
     pthread_t thread;
-    pthread_create(&thread, NULL, senderSharred_thread2, fileName);
+    pthread_create(&thread, NULL, SharedMemorySecondThread, fileName);
 
    
     pthread_join(thread, NULL);
