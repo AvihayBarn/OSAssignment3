@@ -12,4 +12,4 @@ FileSenderAndReciver.o: FileSenderAndReciver.c
 	$(CC) $(FLAGS) -c FileSenderAndReciver.c
 
 clean:
-	rm -f *.o *.so *.text *.client *.server  FileSenderAndReciver 
+	rm -f *.o *.so *.txt *.client *.server  FileSenderAndReciver 
