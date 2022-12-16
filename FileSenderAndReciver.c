@@ -148,18 +148,18 @@ int TCPsend(){
     addr.sin_addr.s_addr = inet_addr(LOCAL_IP);
     int con = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
     if (con == ERROR){
-        perror("connect");
+        perror("eror in the connect");
         close(sockfd);
         exit(1);}
     
     FILE *fp = fopen(fileName, "rb");
     if (!fp){
-        perror("fopen sender");
+        perror("eror in the file open");
         return ERROR;}
     char buffer[LINESIZE];
     size_t bytes_read;
     start = clock();
-    printf("TCP/IPv4 Socket - start: %f\n", (float)start / CLOCKS_PER_SEC);
+    printf("the start time of TCP/IPv4 Socket is: %f\n", (float)start / CLOCKS_PER_SEC);
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0){
         send(sockfd, buffer, bytes_read, 0);
         bzero(buffer, LINESIZE);}
@@ -174,22 +174,22 @@ int TCPrecive(){
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) == ERROR){
-        perror("bind");
+        perror("eror in the bind");
         return ERROR;}
   
     if (listen(sock_fd, 10) == ERROR){
-        perror("listen");
+        perror("eror  in the listen");
         return -1;}
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int client_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_len);
     if (client_fd == ERROR){
-        perror("accept");
+        perror("erorr in the accept");
         return ERROR;}
 
-    FILE *file = fopen("rec_file_tcp.txt", "wb");
+    FILE *file = fopen("reciv_tcp_file.txt", "wb");
     if (file == NULL){
-        perror("reciver file");
+        perror("erorr in the reciver file");
         return ERROR;}
     char buf[LINESIZE];
     size_t num_bytes_received;
@@ -199,16 +199,16 @@ int TCPrecive(){
         bzero(buf, LINESIZE);}
     
     if (num_bytes_received == ERROR){
-        perror("recive");
+        perror("erorr in the reciv");
         return -1;}
     close(sock_fd);
     fclose(file);
     end = clock();
-    int c = Checksum_Cauculation("rec_file_tcp.txt");
+    int c = Checksum_Cauculation("reciv_tcp_file.txt");
     if (c == 1){
-        printf("TCP/IPv4 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);}
+        printf("the time of TCP/IPv4 Socket - end is: %f\n", (double)end / CLOCKS_PER_SEC);}
     else if (c == ERROR){
-        printf("TCP/IPv4 Socket - end: -1\n");}
+        printf("promblm in chaksun in TCP/IPv4 Socket - end: -1\n");}
     return 0;
 }
 
@@ -242,11 +242,11 @@ int UDPrecive(){
     servaddr.sin_port = htons(12345);
     if (bind(sockfd, (const struct sockaddr *)&servaddr,
              sizeof(servaddr)) < 0){
-        perror("bind failed");
+        perror("eror in the bind");
         exit(EXIT_FAILURE);}
-    FILE *file = fopen("rec_file_udp.txt", "wb");
+    FILE *file = fopen("reciv_udp_file.txt", "wb");
     if (file == NULL){
-        perror("reciver file");
+        perror("error in the reciver file");
         return ERROR;}
     int len = sizeof(cliaddr);
     size_t num_bytes_received;
@@ -255,17 +255,17 @@ int UDPrecive(){
                                           MSG_WAITALL, (struct sockaddr *)&cliaddr,
                                           &len)) > 0){
         if (num_bytes_received == ERROR){
-            perror("recive");
+            perror("error in the recive");
             return ERROR;}
         num_bytes_written = fwrite(buffer, sizeof(char), num_bytes_received, file);
         bzero(buffer, LINESIZE);}
     fclose(file);
     end = clock();
-    int c = Checksum_Cauculation("rec_file_udp.txt");
+    int c = Checksum_Cauculation("reciv_udp_file.txt");
     if (c == 1){
-        printf("UDP/IPv6 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);}
+        printf("the end time of UDP/IPv6 Socket - is: %f\n", (double)end / CLOCKS_PER_SEC);}
     else if (c == ERROR){
-        printf("UDP/IPv6 Socket - end: -1\n");}
+        printf("problm in chaksum in UDP/IPv6 Socket - end: -1\n");}
     close(sockfd);
     return 0;
 }
@@ -285,11 +285,11 @@ int UDPsend()
     servaddr.sin_addr.s_addr = INADDR_ANY;
     FILE *fp = fopen(fileName, "rb");
     if (!fp){
-        perror("fopen sender");
+        perror("eror in the file open");
         return -1;}
     size_t bytes_read;
     start = clock();
-    printf("UDP/IPv6 Socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
+    printf("the UDP/IPv6 Socket - start time is: %f\n", (double)start / CLOCKS_PER_SEC);
 
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0){
         size_t bytes_sent = 0;
@@ -300,7 +300,7 @@ int UDPsend()
 
             else if (ret < 0)
             {
-                perror("send");
+                perror("eror in the send");
                 exit(1);
             }
         }
@@ -349,11 +349,9 @@ int UDS_stream_recive()
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_sock == -1)
     {
-        printf("SOCKET ERROR");
+        printf("error in the socket creat");
         exit(1);
     }
-
-    
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SOCK_PATH);
     len = sizeof(server_sockaddr);
@@ -362,7 +360,7 @@ int UDS_stream_recive()
     recvie_code = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
     if (recvie_code == -1)
     {
-        printf("BIND ERROR");
+        printf("eror in the bind");
         close(server_sock);
         exit(1);
     }
@@ -370,7 +368,7 @@ int UDS_stream_recive()
     recvie_code = listen(server_sock, backlog);
     if (recvie_code == -1)
     {
-        printf("LISTEN ERROR");
+        printf("eror  in the listen");
         close(server_sock);
         exit(1);
     }
@@ -378,26 +376,24 @@ int UDS_stream_recive()
     client_sock = accept(server_sock, (struct sockaddr *)&client_sockaddr, &len);
     if (client_sock == -1)
     {
-        printf("ACCEPT ERROR");
+        printf("Aerror in the accept");
         close(server_sock);
         close(client_sock);
         exit(1);
     }
-
-
     len = sizeof(client_sockaddr);
     recvie_code = getpeername(client_sock, (struct sockaddr *)&client_sockaddr, &len);
     if (recvie_code == -1)
     {
-        printf("GETPEERNAME ERROR");
+        printf("error in the GETPEERNAME");
         close(server_sock);
         close(client_sock);
         exit(1);
     }
-    FILE *file = fopen("rec_file_uds.txt", "wb");
+    FILE *file = fopen("reciv_uds_file.txt", "wb");
     if (file == NULL)
     {
-        perror("reciver file");
+        perror("error in the opening file");
         return -1;
     }
 
@@ -411,20 +407,20 @@ int UDS_stream_recive()
 
     if (num_bytes_received == -1)
     {
-        perror("recive");
+        perror("error in the recive");
         return -1;
     }
     fclose(file);
 
     end = clock();
-    int c = Checksum_Cauculation("rec_file_uds.txt");
+    int c = Checksum_Cauculation("reciv_uds_file.txt");
     if (c == 1)
     {
-        printf("UDS - Stream socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
+        printf("the end time of UDS - Stream socket - is: %f\n", (double)end / CLOCKS_PER_SEC);
     }
     else if (c == -1)
     {
-        printf("UDS - Stream socket - end: -1\n");
+        printf("problem in chakesum in UDS - Stream socket - end: -1\n");
     }
     close(server_sock);
     close(client_sock);
@@ -444,7 +440,7 @@ int UDS_stream_send()
     client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (client_sock == -1)
     {
-        printf("SOCKET ERROR");
+        printf("error in the socket ");
         exit(1);
     }
 
@@ -455,7 +451,7 @@ int UDS_stream_send()
     rc = bind(client_sock, (struct sockaddr *)&client_sockaddr, len);
     if (rc == -1)
     {
-        printf("BIND ERROR");
+        printf("eror in the bind");
         close(client_sock);
         exit(1);
     }
@@ -464,19 +460,19 @@ int UDS_stream_send()
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, len);
     if (rc == -1)
     {
-        printf("CONNECT ERROR");
+        printf("error in the CONNECT");
         close(client_sock);
         exit(1);
     }
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
-        perror("fopen sender");
+        perror("eror in the file open");
         return -1;
     }
     size_t bytes_read;
     start = clock();
-    printf("UDS - Stream socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
+    printf("the stert time in UDS - Stream socket - is: %f\n", (double)start / CLOCKS_PER_SEC);
     while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0)
     {
         send(client_sock, buf, bytes_read, 0);
@@ -515,7 +511,7 @@ int UDS_datagram_recive()
     server_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (server_sock == -1)
     {
-        printf("SOCKET ERROR");
+        printf("error in the socket");
         exit(1);
     }
 
@@ -526,15 +522,15 @@ int UDS_datagram_recive()
     rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
     if (rc == -1)
     {
-        printf("BIND ERROR");
+        printf("eror in the bind");
         close(server_sock);
         exit(1);
     }
 
-    FILE *file = fopen("rec_file_uds_dg.txt", "wb");
+    FILE *file = fopen("reciv_uds_file_diagrem.txt", "wb");
     if (file == NULL)
     {
-        perror("reciver file");
+        perror("error in the reciver file");
         return -1;
     }
     size_t bytes_rec = 0;
@@ -542,7 +538,7 @@ int UDS_datagram_recive()
     {
         if (bytes_rec == -1)
         {
-            printf("RECVFROM ERROR");
+            printf("error in the RECVFROM ");
             close(server_sock);
             exit(1);
         }
@@ -554,14 +550,14 @@ int UDS_datagram_recive()
     }
     fclose(file);
     end = clock();
-    int c = Checksum_Cauculation("rec_file_uds_dg.txt");
+    int c = Checksum_Cauculation("reciv_uds_file_diagrem.txt");
     if (c == 1)
     {
-        printf("UDS - Dgram socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
+        printf("the end time in UDS - Dgram socket - is: %f\n", (double)end / CLOCKS_PER_SEC);
     }
     else if (c == -1)
     {
-        printf("UDS - Dgram socket - end: -1\n");
+        printf("problem in chakesum in UDS - Dgram socket : -1\n");
     }
     close(server_sock);
     return 0;
@@ -578,7 +574,7 @@ int UDS_datagram_send()
     client_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (client_sock == -1)
     {
-        printf("SOCKET ERROR");
+        printf("error in the socket");
         exit(1);
     }
     remote.sun_family = AF_UNIX;
@@ -586,18 +582,18 @@ int UDS_datagram_send()
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
-        perror("fopen sender");
+        perror("eror in the file open");
         return -1;
     }
     size_t bytes_read;
     start = clock();
-    printf("UDS - Dgram socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
+    printf("the start time in UDS - Dgram socket - is: %f\n", (double)start / CLOCKS_PER_SEC);
     while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0)
     {
         sendto(client_sock, (const char *)buf, bytes_read, MSG_CONFIRM, (const struct sockaddr *)&remote, sizeof(remote));
         if (rc == -1)
         {
-            printf("SENDTO ERROR\n");
+            printf("error in SENDTO \n");
             close(client_sock);
             exit(1);
         }
@@ -639,24 +635,24 @@ int MMAP()
     int fd = open(fileName, O_RDWR);
     if (fd == -1)
     {
-        perror("open");
+        perror("error in the open file");
         exit(1);
     }
     struct stat st;
     fstat(fd, &st);
     size_t filesize = st.st_size;
     start = clock();
-    printf("MMAP - start: %f\n", (double)start / CLOCKS_PER_SEC);
+    printf("the start time in MMAP - is: %f\n", (double)start / CLOCKS_PER_SEC);
     void *addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (addr == MAP_FAILED)
     {
-        perror("mmap");
+        perror("error in the mmap");
         exit(1);
     }
-    FILE *file = fopen("rec_file_mmap.txt", "wb");
+    FILE *file = fopen("reciv_mmap_file.txt", "wb");
     if (file == NULL)
     {
-        perror("reciver file");
+        perror("error in reciver file");
         return -1;
     }
     for (size_t i = 0; i < filesize; i++)
@@ -666,14 +662,14 @@ int MMAP()
     }
     fclose(file);
     end = clock();
-    int c = Checksum_Cauculation("rec_file_mmap.txt");
+    int c = Checksum_Cauculation("reciv_mmap_file.txt");
     if (c == 1)
     {
-        printf("MMAP - end: %f\n", (double)end / CLOCKS_PER_SEC);
+        printf("the end time in MMAP - is: %f\n", (double)end / CLOCKS_PER_SEC);
     }
     else if (c == -1)
     {
-        printf("MMAP - end: -1\n");
+        printf("problem in chakesum in MMAP : -1\n");
     }
     return 0;
 }
@@ -684,18 +680,18 @@ int PIPE()
     pid_t childpid;
     pipe(filedes);
     if ((childpid = fork()) == -1){
-        perror("fork");
+        perror("error in the fork");
         exit(1);}
     if (childpid == 0){
         close(filedes[0]);
         char buf[LINESIZE];
         FILE *fp = fopen(fileName, "rb");
         if (!fp){
-            perror("fopen sender");
+            perror("eror in the file open");
             return -1;}
         size_t bytes_read;
         start = clock();
-        printf("PIPE - start: %f\n", (double)start / CLOCKS_PER_SEC);
+        printf("the start time in PIPE - is: %f\n", (double)start / CLOCKS_PER_SEC);
         while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0){
             write(filedes[1], buf, bytes_read);}
         close(filedes[1]);
@@ -705,10 +701,10 @@ int PIPE()
     {
         close(filedes[1]); 
 
-        FILE *file = fopen("rec_file_pipe.txt", "wb");
+        FILE *file = fopen("reciv_pipe_file.txt", "wb");
         if (file == NULL)
         {
-            perror("reciver file");
+            perror("error in reciver file");
             return -1;
         }
         char readbuffer[LINESIZE];
@@ -723,14 +719,14 @@ int PIPE()
         close(filedes[0]);
         fclose(file);
         end = clock();
-        int c = Checksum_Cauculation("rec_file_pipe.txt");
+        int c = Checksum_Cauculation("reciv_pipe_file.txt");
         if (c == 1)
         {
-            printf("PIPE - end: %f\n", (double)end / CLOCKS_PER_SEC);
+            printf("the end time in PIPE - is: %f\n", (double)end / CLOCKS_PER_SEC);
         }
         else if (c == -1)
         {
-            printf("PIPE - end: -1\n");
+            printf("prblom in chakesum in PIPE: -1\n");
         }
     }
     return 0;
@@ -742,13 +738,13 @@ void *SharedMemoryFirstThread(void *arg)
     struct stat file_stat;
     if (stat(fileName, &file_stat) != 0)
     {
-        perror("Error getting file information");
+        perror("error  in informison data reciving");
         exit(1);
     }
-    int dest_fd = open("rec_file_shared.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int dest_fd = open("reciv_shared_file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (dest_fd == -1)
     {
-        perror("OPEN");
+        perror("error in opening the file");
         exit(1);
     }
     size_t num_bytes = 0;
@@ -758,7 +754,7 @@ void *SharedMemoryFirstThread(void *arg)
         bytes_written = write(dest_fd, addr, file_stat.st_size - num_bytes);
         if (bytes_written == -1)
         {
-            perror("WRITE");
+            perror("error in write");
             exit(1);
         }
         num_bytes += bytes_written;
@@ -769,7 +765,7 @@ void *SharedMemoryFirstThread(void *arg)
 void *SharedMemorySecondThread()
 {
     start = clock();
-    printf("SHARED MEMORY - start: %f\n", (double)start / CLOCKS_PER_SEC);
+    printf("the start time in SHARED MEMORY - is: %f\n", (double)start / CLOCKS_PER_SEC);
     int fd = open(fileName, O_RDONLY);
     size_t file_size = lseek(fd, 0, SEEK_END);
     void *addr = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
@@ -779,14 +775,14 @@ void *SharedMemorySecondThread()
     munmap(addr, file_size);
     close(fd);
     end = clock();
-    int c = Checksum_Cauculation("rec_file_shared.txt");
+    int c = Checksum_Cauculation("reciv_shared_file.txt");
     if (c == 1)
     {
-        printf("SHARED MEMORY - end: %f\n", (double)end / CLOCKS_PER_SEC);
+        printf("the end time in SHARED MEMORY - is: %f\n", (double)end / CLOCKS_PER_SEC);
     }
     else if (c == -1)
     {
-        printf("SHARED MEMORY - end: -1\n");
+        printf("problem in chakesum in SHARED MEMORY: -1\n");
     }
     return NULL;
 }
