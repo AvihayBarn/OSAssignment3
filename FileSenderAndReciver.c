@@ -18,9 +18,6 @@
 #include <unistd.h>
 #include <unistd.h>
 
-
-
-
 #define ERROR -1
 #define LINESIZE 1024
 #define PORT 8080
@@ -31,20 +28,12 @@
 //size of 100 megabytes
 const int BUFFER_SIZE = 104857600;
 
-
 pthread_mutex_t mutex;
-
 
 char* LOCAL_IP = "127.0.0.1";
 clock_t start;
 clock_t end;
 char* fileName = "file_100MB.txt";
-
-
-
-
-
-
 //Every method has function to send and recive the data and a wraping function
 
 int TCPsend();
@@ -73,376 +62,210 @@ int checksum_compare(int checksum1,int checksum2);
 
 int MMAP();
 int PIPE();
-
-
-
-
-
-
 int main(int argc, char* argv[])
 {
-
     const char* methods[] = { "TCP_IPv4","UDP_IPv6","UDS_diagram","UDS_stream","MMap","Pipe","Shared Memory"};
-    
-    
     char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
-    if (!buffer)
-    {
+    if (!buffer){
         perror("malloc");
-        return 1;
-    }
-
+        return 1;}
     
-    for (int i = 0; i < BUFFER_SIZE; i++)
-    {
-        buffer[i] = rand() % 256;
-    }
-
+    for (int i = 0; i < BUFFER_SIZE; i++){
+        buffer[i] = rand() % 256;}
     
     FILE *file = fopen(fileName, "wb");
-    if (!file)
-    {
+    if (!file){
         perror("fopen");
-        return 1;
-    }
+        return 1;}
 
-    
     size_t bytes_written = fwrite(buffer, sizeof(char), BUFFER_SIZE, file);
-    if (bytes_written != BUFFER_SIZE)
-    {
+    if (bytes_written != BUFFER_SIZE){
         fprintf(stderr, "Error writing to file\n");
-        return 1;
-    }
-
+        return 1;}
     
-    if (fclose(file) != 0)
-    {
+    if (fclose(file) != 0){
         perror("fclose");
-        return 1;
-    }
-
-    
+        return 1;}
     free(buffer);
 
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++){
         char* method = methods[i];
-         if(strcmp("TCP_IPv4", method) == 0)
-         {
-             TCP();
-         }
-         else if(strcmp("UDP_IPv6", method) == 0)
-         {
-             UDP();
-         }
-         else if(strcmp("UDS_diagram", method) == 0)
-         {
-             UDS_datagram();
-         }
-         else if(strcmp("UDS_stream", method) == 0)
-         {
-             UDS_stream();
-         }
-         else if(strcmp("MMap", method) == 0)
-         {
-             MMAP();
-         }
-         else if(strcmp("Pipe", method) == 0)
-         {
-             PIPE();
-         }
-         else if(strcmp("Shared Memory", method) == 0)
-         {
-             SharedMemory();
-         }
-         
+         if(strcmp("TCP_IPv4", method) == 0){
+             TCP();}
+         else if(strcmp("UDP_IPv6", method) == 0){
+             UDP();}
+         else if(strcmp("UDS_diagram", method) == 0){
+             UDS_datagram();}
+         else if(strcmp("UDS_stream", method) == 0){
+             UDS_stream();}
+         else if(strcmp("MMap", method) == 0){
+             MMAP();}
+         else if(strcmp("Pipe", method) == 0){
+             PIPE();}
+         else if(strcmp("Shared Memory", method) == 0){
+             SharedMemory();}
     }
-    
-    
-    
-   
-    
-    
-    
-    
-    return 0;
-}
+    return 0;}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-int Checksum_of_file(int file)
-{
+int Checksum_of_file(int file){
     long long temp;
     size_t bytes_num;
     char buffer[LINESIZE];
     int file_checksum = 0;
-    while ((bytes_num = read(file, buffer, sizeof(buffer))) > 0)
-    {
+    while ((bytes_num = read(file, buffer, sizeof(buffer))) > 0){
         temp = 0;
-        for (int i = 0; i < bytes_num; i++)
-        {
-            temp += buffer[i];
-        }
-            
+        for (int i = 0; i < bytes_num; i++){
+            temp += buffer[i];}
         bzero(buffer, LINESIZE);
-        file_checksum += temp;
-    }
-    return file_checksum;
-}
+        file_checksum += temp;}
+    return file_checksum;}
 
-
-int Checksum_Cauculation(char *input_filename)
-{
-     
-     
+int Checksum_Cauculation(char *input_filename){
     int file1 = open(fileName, O_CREAT | O_RDWR) ,file2 = open(input_filename, O_CREAT | O_RDWR);
-  
-    if (file1 == -1)
-    {
-        perror("error with open files");
-    }
-
+    if (file1 == ERROR){
+        perror("error with open files");}
     int file1_checksum = Checksum_of_file(file1);
-
-
-    if (file2 == -1)
-    {
-        perror("open");
-    }
-
+    if (file2 == -1){
+        perror("open");}
+    
     int file2_checksum = Checksum_of_file(file2);
     close(file1);
     close(file2);
+    return checksum_compare(file1_checksum,file2_checksum);}
 
-    return checksum_compare(file1_checksum,file2_checksum);
-
-
+int checksum_compare(int checksum1,int checksum2){
+    if (checksum1 == checksum2){
+        return 1;}
+    else{
+        return -1;}
 }
 
-
-int checksum_compare(int checksum1,int checksum2)
-{
-    if (checksum1 == checksum2)
-    {
-        return 1;
-    }
-    else
-    {
-        return -1;
-    }
-}
-
-
-
-
-int TCPsend()
-{
+int TCPsend(){
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = inet_addr(LOCAL_IP);
-
-    
     int con = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
-    if (con == -1)
-    {
+    if (con == ERROR){
         perror("connect");
         close(sockfd);
-        exit(1);
-    }
+        exit(1);}
     
     FILE *fp = fopen(fileName, "rb");
-    if (!fp)
-    {
+    if (!fp){
         perror("fopen sender");
-        return -1;
-    }
-
-    
+        return ERROR;}
     char buffer[LINESIZE];
     size_t bytes_read;
     start = clock();
     printf("TCP/IPv4 Socket - start: %f\n", (float)start / CLOCKS_PER_SEC);
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0)
-    {
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0){
         send(sockfd, buffer, bytes_read, 0);
-        bzero(buffer, LINESIZE);
-    }
-    
+        bzero(buffer, LINESIZE);}
     fclose(fp);
     close(sockfd);
-    return 0;
-}
+    return 0;}
 
-int TCPrecive()
-{
-   
+int TCPrecive(){
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-    {
+    if (bind(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) == ERROR){
         perror("bind");
-        return -1;
-    }
-
-    
-    if (listen(sock_fd, 10) == -1)
-    {
+        return ERROR;}
+  
+    if (listen(sock_fd, 10) == ERROR){
         perror("listen");
-        return -1;
-    }
-
-    
+        return -1;}
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int client_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-    if (client_fd == -1)
-    {
+    if (client_fd == ERROR){
         perror("accept");
-        return -1;
-    }
+        return ERROR;}
 
     FILE *file = fopen("rec_file_tcp.txt", "wb");
-    if (file == NULL)
-    {
+    if (file == NULL){
         perror("reciver file");
-        return -1;
-    }
-    
+        return ERROR;}
     char buf[LINESIZE];
     size_t num_bytes_received;
     size_t num_bytes_written;
-    while ((num_bytes_received = recv(client_fd, buf, sizeof(buf), 0)) > 0)
-    {
+    while ((num_bytes_received = recv(client_fd, buf, sizeof(buf), 0)) > 0){
         num_bytes_written = fwrite(buf, sizeof(char), num_bytes_received, file);
-        bzero(buf, LINESIZE);
-    }
-
-    if (num_bytes_received == -1)
-    {
-        perror("recive");
-        return -1;
-    }
-    close(sock_fd);
+        bzero(buf, LINESIZE);}
     
+    if (num_bytes_received == ERROR){
+        perror("recive");
+        return -1;}
+    close(sock_fd);
     fclose(file);
-
     end = clock();
     int c = Checksum_Cauculation("rec_file_tcp.txt");
-    if (c == 1)
-    {
-        printf("TCP/IPv4 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
-    }
-    else if (c == -1)
-    {
-        printf("TCP/IPv4 Socket - end: -1\n");
-    }
+    if (c == 1){
+        printf("TCP/IPv4 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);}
+    else if (c == ERROR){
+        printf("TCP/IPv4 Socket - end: -1\n");}
     return 0;
 }
 
 int TCP()
 {
     int pid = fork();
-    if (pid < 0)
+    if (pid < 0){
+        return ERROR;}
     
-    {
-        return -1;
-    }
-    if (pid == 0)
-    {
+    if (pid == 0){
         TCPsend();
-        exit(0);
-    }
-    else
-    {
+        exit(0);}
+    else{
         TCPrecive();
-        wait(NULL);
-    }
+        wait(NULL);}
 }
 
-
-int UDPrecive()
-{
+int UDPrecive(){
     int sockfd;
     char buffer[LINESIZE];
     struct sockaddr_in servaddr, cliaddr;
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
         perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
+        exit(EXIT_FAILURE);}
     memset(&servaddr, 0, sizeof(servaddr));
     memset(&cliaddr, 0, sizeof(cliaddr));
     memset(buffer, 0, LINESIZE);
-    
     servaddr.sin_family = AF_INET; 
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(12345);
-
-    
     if (bind(sockfd, (const struct sockaddr *)&servaddr,
-             sizeof(servaddr)) < 0)
-    {
+             sizeof(servaddr)) < 0){
         perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-
+        exit(EXIT_FAILURE);}
     FILE *file = fopen("rec_file_udp.txt", "wb");
-    if (file == NULL)
-    {
+    if (file == NULL){
         perror("reciver file");
-        return -1;
-    }
-
+        return ERROR;}
     int len = sizeof(cliaddr);
     size_t num_bytes_received;
     size_t num_bytes_written;
     while ((num_bytes_received = recvfrom(sockfd, (char *)buffer, LINESIZE,
                                           MSG_WAITALL, (struct sockaddr *)&cliaddr,
-                                          &len)) > 0)
-    {
-        if (num_bytes_received == -1)
-        {
+                                          &len)) > 0){
+        if (num_bytes_received == ERROR){
             perror("recive");
-            return -1;
-        }
-        
+            return ERROR;}
         num_bytes_written = fwrite(buffer, sizeof(char), num_bytes_received, file);
-       
-        bzero(buffer, LINESIZE);
-    }
-
+        bzero(buffer, LINESIZE);}
     fclose(file);
     end = clock();
     int c = Checksum_Cauculation("rec_file_udp.txt");
-    if (c == 1)
-    {
-        printf("UDP/IPv6 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);
-    }
-    else if (c == -1)
-    {
-        printf("UDP/IPv6 Socket - end: -1\n");
-    }
+    if (c == 1){
+        printf("UDP/IPv6 Socket - end: %f\n", (double)end / CLOCKS_PER_SEC);}
+    else if (c == ERROR){
+        printf("UDP/IPv6 Socket - end: -1\n");}
     close(sockfd);
     return 0;
 }
@@ -452,44 +275,29 @@ int UDPsend()
     int sockfd;
     char buffer[LINESIZE];
     struct sockaddr_in servaddr;
-
-    
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
         perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
+        exit(EXIT_FAILURE);}
     memset(&servaddr, 0, sizeof(servaddr));
     memset(buffer, 0, LINESIZE);
-  
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(12345);
     servaddr.sin_addr.s_addr = INADDR_ANY;
-
-    
     FILE *fp = fopen(fileName, "rb");
-    if (!fp)
-    {
+    if (!fp){
         perror("fopen sender");
-        return -1;
-    }
-
-  
+        return -1;}
     size_t bytes_read;
     start = clock();
     printf("UDP/IPv6 Socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
 
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0)
-    {
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0){
         size_t bytes_sent = 0;
-        while (bytes_sent != bytes_read)
-        {
+        while (bytes_sent != bytes_read){
             size_t ret = sendto(sockfd, (const char *)buffer, bytes_read, MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-            if (ret > 0)
-            {
-                bytes_sent += ret;
-            }
+            if (ret > 0){
+                bytes_sent += ret;}
+
             else if (ret < 0)
             {
                 perror("send");
@@ -510,7 +318,7 @@ int UDP()
     int pid = fork();
     if (pid < 0)
     {
-        return -1;
+        return ERROR;
     }
     if (pid == 0)
     {
@@ -586,12 +394,6 @@ int UDS_stream_recive()
         close(client_sock);
         exit(1);
     }
-    else
-    {
-    }
-
-
-
     FILE *file = fopen("rec_file_uds.txt", "wb");
     if (file == NULL)
     {
@@ -646,11 +448,9 @@ int UDS_stream_send()
         exit(1);
     }
 
-
     client_sockaddr.sun_family = AF_UNIX;
     strcpy(client_sockaddr.sun_path, CLIENT_PATH);
     len = sizeof(client_sockaddr);
-
     unlink(CLIENT_PATH);
     rc = bind(client_sock, (struct sockaddr *)&client_sockaddr, len);
     if (rc == -1)
@@ -659,7 +459,6 @@ int UDS_stream_send()
         close(client_sock);
         exit(1);
     }
-
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, len);
@@ -669,16 +468,12 @@ int UDS_stream_send()
         close(client_sock);
         exit(1);
     }
-
     FILE *fp = fopen(fileName, "rb");
-
-
     if (!fp)
     {
         perror("fopen sender");
         return -1;
     }
-
     size_t bytes_read;
     start = clock();
     printf("UDS - Stream socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
@@ -687,10 +482,8 @@ int UDS_stream_send()
         send(client_sock, buf, bytes_read, 0);
         bzero(buf, LINESIZE);
     }
-
     fclose(fp);
     close(client_sock);
-
     return 0;
 }
 
@@ -712,7 +505,6 @@ int UDS_stream()
         wait(NULL);
     }
 }
-
 int UDS_datagram_recive()
 {
     int server_sock, len, rc;
@@ -720,18 +512,12 @@ int UDS_datagram_recive()
     char buf[LINESIZE];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(buf, 0, LINESIZE);
-
-
     server_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (server_sock == -1)
     {
         printf("SOCKET ERROR");
         exit(1);
     }
-    else
-    {
-    }
-
 
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SOCK_PATH);
@@ -751,9 +537,7 @@ int UDS_datagram_recive()
         perror("reciver file");
         return -1;
     }
-
     size_t bytes_rec = 0;
-
     while ((bytes_rec = recvfrom(server_sock, (char *)buf, sizeof(buf), MSG_WAITALL, (struct sockaddr *)&server_sockaddr, &len)) > 0)
     {
         if (bytes_rec == -1)
@@ -779,9 +563,7 @@ int UDS_datagram_recive()
     {
         printf("UDS - Dgram socket - end: -1\n");
     }
-
     close(server_sock);
-
     return 0;
 }
 
@@ -799,21 +581,14 @@ int UDS_datagram_send()
         printf("SOCKET ERROR");
         exit(1);
     }
-
-
     remote.sun_family = AF_UNIX;
     strcpy(remote.sun_path, SERVER_PATH);
-
-
-
-
     FILE *fp = fopen(fileName, "rb");
     if (!fp)
     {
         perror("fopen sender");
         return -1;
     }
-
     size_t bytes_read;
     start = clock();
     printf("UDS - Dgram socket - start: %f\n", (double)start / CLOCKS_PER_SEC);
@@ -839,7 +614,6 @@ int UDS_datagram_send()
 
     return 0;
 }
-
 int UDS_datagram()
 {
 
@@ -860,22 +634,17 @@ int UDS_datagram()
         wait(NULL);
     }
 }
-
 int MMAP()
 {
-
     int fd = open(fileName, O_RDWR);
     if (fd == -1)
     {
         perror("open");
         exit(1);
     }
-    
     struct stat st;
     fstat(fd, &st);
     size_t filesize = st.st_size;
-
-    
     start = clock();
     printf("MMAP - start: %f\n", (double)start / CLOCKS_PER_SEC);
     void *addr = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -884,7 +653,6 @@ int MMAP()
         perror("mmap");
         exit(1);
     }
-
     FILE *file = fopen("rec_file_mmap.txt", "wb");
     if (file == NULL)
     {
@@ -896,7 +664,6 @@ int MMAP()
         fwrite(&(*((char *)addr)), 1, sizeof(char), file);
         addr++;
     }
-
     fclose(file);
     end = clock();
     int c = Checksum_Cauculation("rec_file_mmap.txt");
@@ -908,7 +675,6 @@ int MMAP()
     {
         printf("MMAP - end: -1\n");
     }
-
     return 0;
 }
 
@@ -916,40 +682,27 @@ int PIPE()
 {
     int filedes[2];
     pid_t childpid;
-
     pipe(filedes);
-
-    if ((childpid = fork()) == -1)
-    {
+    if ((childpid = fork()) == -1){
         perror("fork");
-        exit(1);
-    }
-
-    if (childpid == 0)
-    {
+        exit(1);}
+    if (childpid == 0){
         close(filedes[0]);
-
         char buf[LINESIZE];
         FILE *fp = fopen(fileName, "rb");
-        if (!fp)
-        {
+        if (!fp){
             perror("fopen sender");
-            return -1;
-        }
-
+            return -1;}
         size_t bytes_read;
         start = clock();
         printf("PIPE - start: %f\n", (double)start / CLOCKS_PER_SEC);
-        while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0)
-        {
-            write(filedes[1], buf, bytes_read);
-        }
+        while ((bytes_read = fread(buf, 1, sizeof(buf), fp)) > 0){
+            write(filedes[1], buf, bytes_read);}
         close(filedes[1]);
         exit(0);
     }
     else
     {
-        
         close(filedes[1]); 
 
         FILE *file = fopen("rec_file_pipe.txt", "wb");
@@ -969,7 +722,6 @@ int PIPE()
         }
         close(filedes[0]);
         fclose(file);
-
         end = clock();
         int c = Checksum_Cauculation("rec_file_pipe.txt");
         if (c == 1)
@@ -981,31 +733,24 @@ int PIPE()
             printf("PIPE - end: -1\n");
         }
     }
-
     return 0;
 }
-
 void *SharedMemoryFirstThread(void *arg)
 {
  
     void *addr = (void *)arg;
- 
     struct stat file_stat;
     if (stat(fileName, &file_stat) != 0)
     {
         perror("Error getting file information");
         exit(1);
     }
-
-    
     int dest_fd = open("rec_file_shared.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (dest_fd == -1)
     {
         perror("OPEN");
         exit(1);
     }
-
-   
     size_t num_bytes = 0;
     ssize_t bytes_written = 0;
     while (num_bytes < file_stat.st_size && bytes_written != -1)
@@ -1019,27 +764,18 @@ void *SharedMemoryFirstThread(void *arg)
         num_bytes += bytes_written;
     }
     close(dest_fd);
-
-
     return NULL;
 }
-
 void *SharedMemorySecondThread()
 {
     start = clock();
     printf("SHARED MEMORY - start: %f\n", (double)start / CLOCKS_PER_SEC);
-
     int fd = open(fileName, O_RDONLY);
-
     size_t file_size = lseek(fd, 0, SEEK_END);
-
     void *addr = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
-
     pthread_t thread;
     pthread_create(&thread, NULL, SharedMemoryFirstThread, addr);
-    
     pthread_join(thread, NULL);
-
     munmap(addr, file_size);
     close(fd);
     end = clock();
@@ -1052,20 +788,11 @@ void *SharedMemorySecondThread()
     {
         printf("SHARED MEMORY - end: -1\n");
     }
-
-
-   
     return NULL;
 }
 
 void SharedMemory()
 {
     pthread_t thread;
-
-    
     pthread_create(&thread, NULL, SharedMemorySecondThread, fileName);
-
-   
-    pthread_join(thread, NULL);
-}
-
+    pthread_join(thread, NULL);}
